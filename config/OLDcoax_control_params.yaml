@@ -1,0 +1,105 @@
+altitude:
+  base: 0.049
+  trim: 0.066
+
+altitudecontrol:
+  proportional: 0.51
+  derivative: 0.1
+
+yawcontrol:
+  proportional: 0.04
+  differential: 0.0
+
+rollcontrol:
+  proportional: -1.1
+  differential: 0.0
+
+pitchcontrol:
+  proportional: 1.1
+  differential: 0.0
+
+rate_damping:
+  roll: -0.04
+  pitch: 0.04
+
+motorconst:
+  const1: 0.485
+  const2: 0.52
+
+rollrccoef:
+  coef: 0.4
+
+pitchrccoef:
+  coef: 0.4
+
+rollconst:
+  const: -0.1185
+
+pitchconst:
+  const: -0.0450
+
+throttlecoef:
+  coef1: 0.52
+  coef2: 0.52
+
+yawcoef:
+  coef1: 0.0001
+  coef2: 0.0001
+  offset: -15
+
+errorparams:
+  K1_pitch: 0.0
+  K1_roll: 0.0
+
+trims:
+  roll: 0.015
+  pitch: 0.015
+
+# aux1 = scale for xy lqr, aux2-5 = scale hy lgr 1-4 
+# aux_int1 --> control mode toggle in feedback loop
+auxparams:
+  # 0.118
+  aux1: 0.121
+
+  # aux2 0.05, 0.012 altitude
+  aux2: 0.165
+
+  # aux3 0.04, 0.001 altitude_dot
+  aux3: 0.003
+
+  # aux4 0.02
+  aux4: 0.02
+
+  # yaw_dot
+  aux5: 0.00
+  
+  # roll degree offset
+  aux6: 0.0
+  
+  # gain on alt error to w error, default 1
+  aux7: 0.0
+
+  # limit of alt_v error
+  aux8: 1.5
+  # limit of alt_error?
+  aux9: 3.0
+
+  # lqr xy params
+  # u_des tweak
+  aux10: 0.72
+  # v_des tweak
+  aux11: 0.72
+
+  aux12: 1.0
+  aux13: 1.0
+  aux14: 1.0
+  aux15: 1.0
+  aux16: 1.0
+  aux17: 1.0 
+
+  aux_int1: 1
+  aux_int2: 1
+  aux_int3: 0
+  aux_int4: 0
+  aux_int5: 0
+  aux_int6: 0

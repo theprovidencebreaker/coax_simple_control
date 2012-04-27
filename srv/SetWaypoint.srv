@@ -1,0 +1,5 @@
+float64 way_x
+float64 way_y
+---
+int8 result
+
