@@ -22,7 +22,9 @@
 #include <coax_simple_control/SetNavMode.h>
 #include <coax_simple_control/SetControlMode.h>
 #include <coax_simple_control/SetWaypoint.h>
+
 #include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Twist.h>
 #include <tf/tfMessage.h>
 
 
@@ -65,7 +67,8 @@ private:
         ros::Subscriber coax_tf_sub;
 
 	ros::Publisher raw_control_pub;
-	ros::Publisher simple_control_pub;
+	ros::Publisher simple_control_pub;	
+	ros::Publisher velocity_approximation_pub;
 
 	vector<ros::ServiceServer> set_nav_mode;
 	vector<ros::ServiceServer> set_control_mode;
@@ -177,7 +180,6 @@ private:
         double qnd2;
         double qnd3;
 	
-
         double Gx_des;
         double Gy_des;
 
@@ -196,6 +198,11 @@ private:
         double aux1, aux2, aux3, aux4, aux5, aux6;
         double aux7, aux8, aux9, aux10, aux11, aux12;
         double aux13, aux14, aux15, aux16, aux17;
+        double aux18, aux19, aux20, aux21, aux22;
+        double aux23, aux24, aux25, aux26;
+        double aux27, aux28, aux29, aux30, aux31;
+        double aux32, aux33, aux34, aux35, aux36;
+        double lim_vel_error, lim_pos_error, lim_ang_error;
         int aux_int1, aux_int2, aux_int3, aux_int4, aux_int5, aux_int6;
 
         double Gz_old1, Gz_old2, Gz_old3;
@@ -205,7 +212,8 @@ private:
         double way_old[3];
         double acc_hx[6], acc_hy[6];
         double vx_facc_old, vy_facc_old;
-
+        double waypoints_x[40], waypoints_y[40];
+        double e_x_integral, e_y_integral;
 
 };
 

@@ -69,15 +69,7 @@ CoaxSimpleControl::CoaxSimpleControl(ros::NodeHandle &node)
 ,way_changed(0) ,way_old{0.0, 0.0, 0.0}
 ,acc_hx{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, acc_hy{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
 ,vx_facc_old(0.0),vy_facc_old(0.0)
-,waypoints_x{1.04000, 1.019443,	  0.959787,    0.866869,  0.749787,    0.6200, 0.4902128, 0.373130,    0.28021,   0.22055,   0.2000, 0.1794437, 0.119787, 0.026869,  -0.09021,  -0.2200, -0.34978 ,-0.466869,-0.559787, -0.6194,    -0.64000, -0.619443, -0.55978,  -0.46686,   -0.349787, -0.22000, -0.09021,  0.02686,   0.11978,   0.17944,    0.2000,   0.22055,  0.28021,  0.37313,  0.490212,  0.620,    0.74978, 0.86686,   0.95978,  1.019443}
-,waypoints_y{-1.3000, -1.114589, -0.94732884, -0.8145898, -0.7293660, -0.7000, -0.729366, -0.8145898, -0.947328, -1.114589, -1.300, -1.48541,  -1.65267, -1.7854101, -1.870633, -1.900,  -1.87063, -1.78541, -1.652671, -1.4854101, -1.300,   -1.114589, -0.947328, -0.8145898, -0.729366, -0.7000,  -0.72936, -0.814589, -0.947328, -1.1145898, -1.30000, -1.48541, -1.65267, -1.78541, -1.870633, -1.90000, -1.8706, -1.785410, -1.65267, -1.485410}
 
-
-,e_x_integral(0.0), e_y_integral(0.0)
-
-// ,waypoints_x{1.0, 1.0, -0.5, -0.5}, waypoints_y{ -1.8, -0.8, -0.8, -1.8}
-//,waypoints_x{1.0400, 0.95978, 0.74978, 0.49021,	0.2802, 0.2000, 0.11978, -0.09021, -0.3497, -0.55978, -0.64000, -0.55978, -0.349787, -0.090212,	0.119787, 0.2000, 0.28021, 0.49021, 0.74978, 0.9597}
-//,waypoints_y{-1.3000, -0.94732, -0.72936, -0.72936, -0.94732, -1.300, -1.65267, -1.87063, -1.8706, -1.65267, -1.3000, -0.94732, -0.72936, -0.72936, -0.947328, -1.300, -1.6526, -1.8706, -1.8706, -1.6526}
 
 {
   set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxSimpleControl::setNavMode, this));
@@ -129,26 +121,6 @@ void CoaxSimpleControl::loadParams(ros::NodeHandle &n) {
   n.getParam("auxparams/aux15", aux15);
   n.getParam("auxparams/aux16", aux16);
   n.getParam("auxparams/aux17", aux17);
-  n.getParam("auxparams/aux18", aux18);
-  n.getParam("auxparams/aux19", aux19);
-  n.getParam("auxparams/aux20", aux20);
-  n.getParam("auxparams/aux21", aux21);
-  n.getParam("auxparams/aux22", aux22);
-  n.getParam("auxparams/aux23", aux23);
-  n.getParam("auxparams/aux24", aux24);
-  n.getParam("auxparams/aux25", aux25);
-  n.getParam("auxparams/aux26", aux26);
-  n.getParam("auxparams/aux27", aux27);
-  n.getParam("auxparams/aux28", aux28);
-  n.getParam("auxparams/aux29", aux29);
-  n.getParam("auxparams/aux30", aux30);
-  n.getParam("auxparams/aux31", aux31);
-  n.getParam("auxparams/aux32", aux32);
-  n.getParam("auxparams/aux33", aux33);
-  n.getParam("auxparams/aux34", aux34);
-  n.getParam("auxparams/aux35", aux35);
-  n.getParam("auxparams/aux36", aux36);
-  
   n.getParam("auxparams/aux_int1", aux_int1);
   n.getParam("auxparams/aux_int2", aux_int2);
   n.getParam("auxparams/aux_int3", aux_int3);
@@ -156,10 +128,7 @@ void CoaxSimpleControl::loadParams(ros::NodeHandle &n) {
   n.getParam("auxparams/aux_int5", aux_int5);
   n.getParam("auxparams/aux_int6", aux_int6);
   n.getParam("trims/roll", roll_trim);
-  n.getParam("trims/pitch", pitch_trim);
-  n.getParam("error_limits/velocity", lim_vel_error);  
-  n.getParam("error_limits/position", lim_pos_error);
-  n.getParam("error_limits/angle", lim_ang_error); 
+  n.getParam("trims/pitch", pitch_trim);  
   
 }
 
@@ -264,8 +233,6 @@ bool CoaxSimpleControl::setControlMode(coax_simple_control::SetControlMode::Requ
       motor2_des = 0;
       servo1_des = 0;
       servo2_des = 0;
-      e_x_integral = 0;
-      e_y_integral = 0;
 
       reachNavState(SB_NAV_STOP, 0.5);
 
@@ -284,12 +251,20 @@ bool CoaxSimpleControl::setWaypoint(coax_simple_control::SetWaypoint::Request &r
   out.result = 0;
 
   ROS_INFO("x: %f, y: %f", req1.way_x, req1.way_y);
+  // old params
+  way_old[0] = Gx_des;
+  way_old[1] = Gy_des;
+  way_old[2] = altitude_des;
+  // new params
+  altitude_des = req1.way_y;
 
-
-  way_changed = int(req1.way_y);
-  e_x_integral = 0.0; 
-  e_y_integral = 0.0; 
-
+  way_changed = 1;
+   
+  // delta_x =
+  // delta_y = 
+  //delta_alt = altitude_des - way_old[2]; 
+  
+  //traj_basic[][]
   
   return 0;
 }
@@ -440,7 +415,7 @@ bool CoaxSimpleControl::rotorReady(void) {
 
 void CoaxSimpleControl::stabilizationControl(void) {
 
-  double yaw_control, altitude_control;
+  double pitch_control, roll_control, yaw_control, altitude_control;
   double rot_yaw[3][3];
   double e_roll, e_pitch, e_roll_dot, e_pitch_dot;
   double e_x, e_y, e_z, e_xb, e_yb, e_altitude;
@@ -458,21 +433,12 @@ void CoaxSimpleControl::stabilizationControl(void) {
   double mock_motor1, mock_motor2;
   double altitude_v_des;
   double test_pitch, test_roll, test_yaw;
-  double roll_offset, pitch_offset;
+  double roll_offset;
   double alt_diff;
   double acc_xc, acc_yc;
   double vx_facc, vy_facc;
   static float Vx_global, Vy_global, V_xb, V_yb;
-  static int waypoint_index = 0;
-  static int cnt_index = 0;
-  static float e_xy_lim = 10.00, lqr_x_old = 0;
-  static int way_changed_old = 0;
-  static float aux10_old = 1.00, aux11_old = 1.00;
-  static float aux16_old = 1.00, aux17_old = 1.00;
-  float limit_integral, y_gain;
 
-  limit_integral = 6.50;
-  y_gain = aux6;  
 
   u_des = 1;
   v_des = 0;
@@ -543,8 +509,7 @@ void CoaxSimpleControl::stabilizationControl(void) {
   }
 
   if (mil_count % 20 == 0 ) {
-    //ROS_INFO("vx_facc, vy_facc, Vx_global, Vy_global, acc_xc, acc_xy, %f, %f, %f, %f, %f, %f ", vx_facc, vy_facc, Vx_global, Vy_global, acc_xc, acc_yc);
-    
+    ROS_INFO("vx_facc, vy_facc, Vx_global, Vy_global, acc_xc, acc_xy, %f, %f, %f, %f, %f, %f ", vx_facc, vy_facc, Vx_global, Vy_global, acc_xc, acc_yc);
   }
 
 
@@ -578,73 +543,24 @@ void CoaxSimpleControl::stabilizationControl(void) {
          
   }
 
-
-  
-  // -----------------------------
-  // VICON OPTION START ----------
-  // -----------------------------
-
-  // vicon ps
-
-  term1 = 2*(qnd0*qnd3 + qnd1*qnd2);
-  term2 = 1 - 2*(qnd2*qnd2 + qnd3*qnd3);
-  // psi_vic = atan(term1/term2);
-  psi_vic = atan2(term1, term2);
-  
-
-  psi_vic = psi_vic + 0.00; // + 45 deg, + pi_o/4.00
-  /* if (psi_vic > pi_o) {
-    psi_vic = psi_vic - pi_o/2.00;
-  }
-  else if (psi_vic < - pi_o) {
-    psi_vic = psi_vic + pi_o/2.00;
-  } */
-
-  psi_vic_d = 180.0/pi_o*psi_vic;
-
-  yaw_deg = -psi_vic*r2d;
-  
-  /*
-  yaw_deg = yaw_deg - 120.0;
-
-  if (yaw_deg < -180.00) {
-    yaw_deg = yaw_deg + 360.00;
-  }
-  */
-  yaw_deg = yaw_deg - yaw_offset; // 2nd term (after 180, is yaw trim)
-  
-  if (yaw_deg > 180) {
-    yaw_deg = yaw_deg - 360;
-  }
-  else if (yaw_deg <  -180) {
-    yaw_deg = yaw_deg + 360;
-  }
-
-  // ----------------------------
-  // VICON OPTION END -----------
-  // ----------------------------
-  /*
   yaw_deg = yaw_deg - 180; 
   if (yaw_deg > 180) {
-    yaw_deg = yaw_deg - 360;
+    yaw_deg = yaw_deg - 180;
   }
   else if (yaw_deg <  -180) {
-    yaw_deg = yaw_deg + 360;
+    yaw_deg = yaw_deg + 180;
   }
 
   yaw_deg = yaw_deg - yaw_offset; // 2nd term (after 180, is yaw trim)
   
   if (yaw_deg > 180) {
-    yaw_deg = yaw_deg - 360;
+    yaw_deg = yaw_deg - 180;
   }
   else if (yaw_deg <  -180) {
-    yaw_deg = yaw_deg + 360;
+    yaw_deg = yaw_deg + 180;
   }
-  */
+
   yaw = yaw_deg*d2r;
-
- 
-
    
   //================================
   // OUTER-LOOP POSITION CONTROLLER
@@ -663,7 +579,21 @@ void CoaxSimpleControl::stabilizationControl(void) {
   }
   */
 
+  term1 = 2*(qnd0*qnd3 + qnd1*qnd2);
+  term2 = 1 - 2*(qnd2*qnd2 + qnd3*qnd3);
+  // psi_vic = atan(term1/term2);
+  psi_vic = atan2(term1, term2);
+  
 
+  psi_vic = psi_vic + pi_o/4.00; // + 45 deg
+  if (psi_vic > pi_o) {
+    psi_vic = psi_vic - pi_o/2.00;
+  }
+  else if (psi_vic < - pi_o) {
+    psi_vic = psi_vic + + pi_o/2.00;
+  }
+
+  psi_vic_d = 180.0/pi_o*psi_vic;
 	  
   rot_yaw[0][0] = cos(-yaw);
   rot_yaw[0][1] = sin(-yaw);
@@ -680,61 +610,6 @@ void CoaxSimpleControl::stabilizationControl(void) {
   e_xb = rot_yaw[0][0] * e_x + rot_yaw[0][1] * e_y ;
   e_yb = rot_yaw[1][0] * e_x + rot_yaw[1][1] * e_y ;
 
-
-  if (abs(e_xb) < 0.55 ) { 
-    e_x_integral +=e_xb;
-  }
-  else {
-    e_x_integral = 0;
-  }
-
-  if (abs(e_yb) < 0.55 ) {
-    e_y_integral +=e_yb;
-  }
-  else {
-    e_y_integral = 0;
-  } 
-
-
-  // Limit error on desired position error
-  if (e_xb > e_xy_lim) {
-    e_xb = e_xy_lim;
-  }
-  if (e_xb < -e_xy_lim) {
-    e_xb = -e_xy_lim;
-  }
-  if (e_yb > e_xy_lim) {
-    e_yb = e_xy_lim;
-  }
-  if (e_yb < -e_xy_lim) {
-    e_yb = -e_xy_lim;
-  }
-
-  if (mil_count % 20 == 0 ) {
-    
-    ROS_INFO("Gx_des, Gy_des, e_xb, e_yb:  %f, %f, %f, %f ", Gx_des, Gy_des, e_xb, e_yb);
-  }
-  
-
-
-  if (e_x_integral > limit_integral) {
-    e_x_integral = limit_integral;
-  }
-  else if (e_x_integral < -limit_integral) {
-    e_x_integral = -limit_integral;
-  }
-
-  if (e_y_integral > limit_integral) {
-    e_y_integral = limit_integral;
-  }
-  else if (e_y_integral < -limit_integral) {
-    e_y_integral = -limit_integral;
-  }
-
-  if (mil_count % 20 == 0 ) {
-    ROS_INFO("integrals: %f,  %f", e_x_integral, e_y_integral); 
-  } 
-
   V_xb = rot_yaw[0][0] * Vx_global + rot_yaw[0][1] * Vy_global; 
   V_yb = rot_yaw[1][0] * Vx_global + rot_yaw[1][1] * Vy_global;
 
@@ -743,7 +618,7 @@ void CoaxSimpleControl::stabilizationControl(void) {
   
   // pitch_des = K1_pitch*e_xb + 0; // trim??
   // roll_des = K1_roll*e_yb + 0; // trim??
-  pitch_des = 0; // - 0.3*e_xb;
+  pitch_des = 0;
   roll_des = 0; 
  
   // limit magnitude on error desired calculation
@@ -761,27 +636,32 @@ void CoaxSimpleControl::stabilizationControl(void) {
     roll_des = -ang_err_lim;
   }
   
-    
+  
+  
   //================================
   // INNER-LOOP POSE/ANGLE CONTROLLER
   //================================  
 
   // pitch and roll control
-  roll_offset = imu_r + aux24*d2r;
-  pitch_offset = imu_p + aux25*d2r;
-  e_pitch = pitch_offset - pitch_des; // pitch error = body y error
+  roll_offset = imu_r + aux6*d2r;
+  e_pitch = imu_p - pitch_des; // pitch error = body y error
   e_roll = roll_offset - roll_des; // roll error = body x error
     
   e_roll_dot  = gyro_ch1 - 0; // i.e. e_p_dot. desired = 0
   e_pitch_dot = gyro_ch2 - 0; // i.e. e_q_dot. desired = 0
- 
+  
+  // roll_control = kp_roll * e_roll + kd_roll * e_roll_dot;
+  // pitch_control = kp_pitch * e_pitch + kd_pitch * e_pitch_dot;
+
+  roll_control = kp_roll * e_roll - 0.7*kp_pitch * e_pitch;
+  pitch_control = kp_pitch * e_pitch + 0.7*kp_roll * e_roll;
 
   // yaw control
   
   e_yaw = yaw - yaw_des;
   e_yaw_dot = gyro_ch3 - 0;
 
-  test_pitch = pitch_offset*r2d;
+  test_pitch = imu_p*r2d;
   test_roll = roll_offset*r2d;
   test_yaw = yaw_deg;
 
@@ -800,19 +680,10 @@ void CoaxSimpleControl::stabilizationControl(void) {
   
   altitude_v_des = aux7*e_altitude;
 
-    // if (mil_count % 5 == 0 ) {
-  if (coax_global_z != Gz_old1 ) {
-    // since frequency is set at 100 hz, this should be 20 hz
-
-    alt_diff = (coax_global_z - Gz_old1)*1.00;
-    altitude_v = (coax_global_z - Gz_old1)/delta_t2;
-    e_altitude_v = altitude_v_des - altitude_v ;
-    
-    Gz_old3 = Gz_old2;
-    Gz_old2 = Gz_old1;
-    Gz_old1 = coax_global_z;
-  }
-
+   
+  alt_diff = (coax_global_z - Gz_old3)*1.00;
+  altitude_v = (coax_global_z - Gz_old3)/delta_t;
+  e_altitude_v = altitude_v_des - altitude_v ;
   
   if (e_altitude_v > aux8) {
     e_altitude_v = aux8;
@@ -822,14 +693,17 @@ void CoaxSimpleControl::stabilizationControl(void) {
   }
 
   if (mil_count % 20 == 0 ) {
-    ROS_INFO("rpy: %f, %f, %f", test_roll, test_pitch, test_yaw);
-    ROS_INFO("e_theta, e_phi: %f, %f", e_pitch, e_roll);
-    ROS_INFO("waypoint_index: %i", waypoint_index);
+    ROS_INFO("rpy: %f, %f, %f", test_pitch, test_roll, test_yaw);
     // ROS_INFO("e_altitude_v: %f, coax_global_z : %f, Gz_old1: %f, alt_v: %f, diff: %f", e_altitude_v, coax_global_z, Gz_old1, altitude_v, alt_diff);
 
   }
   
-
+  if (mil_count % 5 == 0 ) {
+    // since frequency is set at 100 hz, this should be 20 hz
+    Gz_old3 = Gz_old2;
+    Gz_old2 = Gz_old1;
+    Gz_old1 = coax_global_z;
+  }
 
   
   altitude_control = kp_altitude * e_altitude + kd_altitude * e_altitude_v; // + ki_altitude * eint_altitude
@@ -843,18 +717,18 @@ void CoaxSimpleControl::stabilizationControl(void) {
   // SWASH PLATE
     
   K_xy[0][0] = -1.3241;
-  K_xy[0][1] = -4.2686*y_gain;
+  K_xy[0][1] = -4.2686;
   K_xy[0][2] = -0.8579;
-  K_xy[0][3] = -2.7538*y_gain;
+  K_xy[0][3] = -2.7538;
   K_xy[0][4] =  7.6652;
   K_xy[0][5] = -2.3813;
   K_xy[0][6] =  1.0687;
   K_xy[0][7] = -0.3241;
   
   K_xy[1][0] =  4.2687;
-  K_xy[1][1] = -1.3308*y_gain;
+  K_xy[1][1] = -1.3308;
   K_xy[1][2] =  2.7554;
-  K_xy[1][3] = -0.8593*y_gain;
+  K_xy[1][3] = -0.8593;
   K_xy[1][4] =  2.3826;
   K_xy[1][5] =  7.6603;
   K_xy[1][6] =  0.3261;
@@ -874,23 +748,18 @@ void CoaxSimpleControl::stabilizationControl(void) {
   lqr_states[1] = 0;
   lqr_states[2] = V_xb; // V_xb;
   lqr_states[3] = V_yb; // V_yb;
-  lqr_states[4] = roll_offset;
-  lqr_states[5] = -pitch_offset;
+  lqr_states[4] = imu_r;
+  lqr_states[5] = -imu_p;
   lqr_states[6] = gyro_ch1;
   lqr_states[7] = -gyro_ch2;
 
-
-  //u_des = 0;
-  //v_des = 0;
+  // u_des = -0.5*e_x;
+  // v_des = -0.5*e_y;
+  u_des = 0;
+  v_des = 0;
   
-  lqr_des[0] = e_xb + e_x_integral*aux22;
-  lqr_des[1] = e_yb + e_y_integral*aux23;
-
-  u_des = aux18*lqr_des[0]; // 
-  //u_des = aux18*e_xb;
-  v_des = aux19*lqr_des[1]; // 
-  //v_des = aux19*e_yb;
-
+  lqr_des[0] = e_xb;
+  lqr_des[1] = e_yb;
   lqr_des[2] = u_des;
   lqr_des[3] = v_des;
   lqr_des[4] = roll_des;
@@ -903,68 +772,17 @@ void CoaxSimpleControl::stabilizationControl(void) {
   } 
 
   lqr_error[0] = lqr_error[0]*aux16;
-
-  if(lqr_error[0] > lim_pos_error) {
-    lqr_error[0] = lim_pos_error;
-  }
-  else if (lqr_error[0] < -lim_pos_error) {
-    lqr_error[0] = -lim_pos_error;
-  }
-
-
-
   lqr_error[1] = lqr_error[1]*aux17;
-  if(lqr_error[1] > lim_pos_error) {
-    lqr_error[1] = lim_pos_error;
-  }
-  else if (lqr_error[1] < -lim_pos_error) {
-    lqr_error[1] = -lim_pos_error;
-  }
-
-
-
   lqr_error[2] = lqr_error[2]*aux10;
-  if(lqr_error[2] > lim_vel_error) {
-    lqr_error[2] = lim_vel_error;
-  }
-  else if (lqr_error[2] < -lim_vel_error) {
-    lqr_error[2] = -lim_vel_error;
-  }
-
   lqr_error[3] = lqr_error[3]*aux11;
-  if(lqr_error[3] > lim_vel_error) {
-    lqr_error[3] = lim_vel_error;
-  }
-  else if (lqr_error[3] < -lim_vel_error) {
-    lqr_error[3] = -lim_vel_error;
-  }
-  
-  // roll
-  lqr_error[4] = lqr_error[4]*aux12 - lqr_error[1]*aux20;
-  if(lqr_error[4] > lim_ang_error) {
-    lqr_error[4] = lim_ang_error;
-  }
-  else if (lqr_error[4] < - lim_ang_error) {
-    lqr_error[4] = -lim_ang_error;
-  }
-
-  // pitch
-  lqr_error[5] = lqr_error[5]*aux13 + lqr_error[0]*aux21;
-
-  if(lqr_error[5] > lim_ang_error) {
-    lqr_error[5] = lim_ang_error;
-  }
-  else if (lqr_error[5] < - lim_ang_error) {
-    lqr_error[5] = -lim_ang_error;
-  }
-
+  lqr_error[4] = lqr_error[4]*aux12;
+  lqr_error[5] = lqr_error[5]*aux13;
   lqr_error[6] = lqr_error[6]*aux14;
   lqr_error[7] = lqr_error[7]*aux15;
 
   if (mil_count % 20 == 0 ) {
-    // ROS_INFO("lqr_error: %f, %f, %f, %f, %f, %f, %f, %f", lqr_error[0], lqr_error[1], lqr_error[2], lqr_error[3], lqr_error[4], lqr_error[5], lqr_error[6], lqr_error[7]);
+    ROS_INFO("lqr_error: %f, %f, %f, %f, %f, %f, %f, %f", lqr_error[0], lqr_error[1], lqr_error[2], lqr_error[3], lqr_error[4], lqr_error[5], lqr_error[6], lqr_error[7]);
     ROS_INFO("pos errors ref, body: %f, %f, %f, %f", e_x, e_y, e_xb, e_yb);
-    // ROS_INFO("waypoint_index: %i", waypoint_index);
   }  
 
   
@@ -974,22 +792,12 @@ void CoaxSimpleControl::stabilizationControl(void) {
   cont_xy[0] = cont_xy[0]*aux1;
   cont_xy[1] = cont_xy[1]*aux1;
   
-  //==============
-  // Publish Additional 
-  // Messages
-  //==============
-  
-  geometry_msgs::Twist velocity_approximation;
-  
-  velocity_approximation.linear.x = lqr_error[0];
-  velocity_approximation.linear.y = lqr_error[1];
-  velocity_approximation.linear.z = lqr_error[2];
-
-  velocity_approximation.angular.x = lqr_error[3];
-  velocity_approximation.angular.y = lqr_error[4];
-  velocity_approximation.angular.z = lqr_error[5];  
-
-  velocity_approximation_pub.publish(velocity_approximation);
+  /*
+  if (mil_count % 50 == 0 ) {
+    ROS_INFO("control suggested: %f %f", cont_xy[0], cont_xy[1]);
+    ROS_INFO("u and v des: %f %f", u_des, v_des);
+  }
+  */
   
   // ROTORS
   
@@ -1014,72 +822,23 @@ void CoaxSimpleControl::stabilizationControl(void) {
   mock_motor1 = motor_const1 + cont_hy[0];
   mock_motor2 = motor_const2 + cont_hy[1];
 
-  //================================
-  // WAYPOINT MANAGER
-  //================================
-  if (way_changed == 1) {
-    Gx_des = waypoints_x[waypoint_index];
-    Gy_des = waypoints_y[waypoint_index];
-    e_xy_lim = 0.35;
 
-    // 	identify beginning of nav mode
-    if (way_changed ==1 && way_changed_old ==0) {
-      way_changed_old = way_changed;
-      ROS_INFO("started navigation");
-      ROS_INFO("started navigation");
-      ROS_INFO("started navigation");
-      ROS_INFO("     ");
-      ROS_INFO("     ");
-      ROS_INFO("     ");
-
-      // penalty on velocity error
-      aux10_old = aux10;
-      aux11_old = aux11;
-      aux10 = aux27;
-      aux11 = aux28;
-      // penalty on position error
-      aux16_old = aux16;
-      aux17_old = aux17;
-      aux16 = aux30;
-      aux17 = aux31;
-      e_x_integral = 0;
-      e_y_integral = 0;
-
-      y_gain = aux29;
-    }
-    
-    if (abs(e_xb) < aux26 && (abs(e_yb)) < aux26 ) {
-      cnt_index = cnt_index +1;
-      if (waypoint_index == 39 && cnt_index == 30 ) {
-        waypoint_index = 0;
-        ROS_INFO("Increment waypoint to 0 ");
-        cnt_index = 0;
-        e_x_integral = 0;
-        e_y_integral = 0;        
-      }
-      else if (waypoint_index < 39 && cnt_index == 30) {
-        waypoint_index = waypoint_index + 1;
-        ROS_INFO("Increment waypoint 1: %i", waypoint_index);
-        cnt_index = 0;
-        e_x_integral = 0;
-        e_y_integral = 0;
-      }      
-    }
+  //==============
+  // Publish Additional 
+  // Messages
+  //==============
   
-  } 
-  else if (way_changed == 0 && way_changed_old == 1){
-    Gx_des = waypoints_x[waypoint_index];
-    Gy_des = waypoints_y[waypoint_index];
-    e_xy_lim = 10.00;
-    aux10 = aux10_old;
-    aux11 = aux11_old;
-    y_gain = 1.00;
-  }
-  way_changed_old = way_changed;
+  geometry_msgs::Twist velocity_approximation;
   
+  velocity_approximation.linear.x = Vx_global;
+  velocity_approximation.linear.y = Vy_global;
+  velocity_approximation.linear.z = 26;
 
+  velocity_approximation.angular.x = coax_global_x;
+  velocity_approximation.angular.y = coax_global_y;
+  velocity_approximation.angular.z = 50;  
 
-
+  velocity_approximation_pub.publish(velocity_approximation);
 
   //================================
   // SERVO INPUTS
@@ -1144,7 +903,6 @@ void CoaxSimpleControl::controlPublisher(size_t rate) {
       
       ROS_INFO("Initiated Desired Yaw %f",yaw_des);
       ROS_INFO("Current Battery Voltage %f",battery_voltage);
-      ROS_INFO("waypoints_x: %f %f %f %f", waypoints_x[0], waypoints_x[1], waypoints_x[2], waypoints_x[3]);
       sum_Yaw_desired = 0;
       sum_Gx_desired = 0;
       sum_Gy_desired = 0;

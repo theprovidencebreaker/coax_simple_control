@@ -24,6 +24,7 @@
 
       <remap from="/CoaxSimpleControl/rawcontrol" to="/rawcontrol"/>
       <remap from="/CoaxSimpleControl/simplecontrol" to="/control"/>
+      <remap from="/CoaxSimpleControl/vel_approx" to="/vel_approx"/>
 
       <remap from="/CoaxSimpleControl/reach_nav_state" to="/reach_nav_state"/>
       <remap from="/CoaxSimpleControl/configure_comm" to="/configure_comm"/>
@@ -32,7 +33,7 @@
 
       <remap from="/CoaxSimpleControl/set_nav_mode" to="/set_nav_mode"/>
       <remap from="/CoaxSimpleControl/set_control_mode" to="/set_control_mode"/>
-
+      <remap from="/CoaxSimpleControl/set_waypoint" to="/set_waypoint"/>
 
       <param name="frequency" value="100"/>
 
